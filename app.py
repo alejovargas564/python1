@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 import os
-import psycopg2
+import psycopg
 import random
 
 app = Flask(__name__)
