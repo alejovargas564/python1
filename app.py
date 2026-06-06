@@ -8,7 +8,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "clave-buscaminas-secreta")
 
 # ── Conexión a PostgreSQL ──────────────────────────────────────────────────────
 def get_connection():
-    return psycopg2.connect(os.environ["DATABASE_URL"])
+    return psycopg.connect(os.environ["DATABASE_URL"])
 
 
 # ── Ruta principal: registro de nombre ────────────────────────────────────────
@@ -60,13 +60,11 @@ def guardar():
             conn.close()
             return jsonify({"ok": True})
 
-        except psycopg2.OperationalError as e:
-            # Error de conexión a la base de datos
+        except psycopg.OperationalError as e:
             print(f"[DB ERROR] {e}")
             return jsonify({"ok": False, "error": "No se pudo conectar a la base de datos."}), 503
 
-        except psycopg2.Error as e:
-            # Cualquier otro error de PostgreSQL
+        except psycopg.Error as e:
             print(f"[DB ERROR] {e}")
             return jsonify({"ok": False, "error": "Error al guardar en la base de datos."}), 500
 
@@ -78,7 +76,7 @@ def guardar():
         return jsonify({"ok": False, "error": "Ocurrió un error inesperado."}), 500
 
 
-# ── Ruta del ranking (consulta todos los estudiantes/jugadores) ────────────────
+# ── Ruta del ranking (consulta todos los jugadores) ───────────────────────────
 @app.route("/ranking")
 def ranking():
     try:
@@ -93,13 +91,13 @@ def ranking():
         jugadores = [{"nombre": f[0], "resultado": f[1]} for f in filas]
         return render_template("ranking.html", jugadores=jugadores)
 
-    except psycopg2.OperationalError as e:
+    except psycopg.OperationalError as e:
         print(f"[DB ERROR] {e}")
         return render_template("error.html",
                                titulo="Error de conexión",
                                mensaje="No se pudo conectar a la base de datos. Intenta más tarde."), 503
 
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         print(f"[DB ERROR] {e}")
         return render_template("error.html",
                                titulo="Error de base de datos",
