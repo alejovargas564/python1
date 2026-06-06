@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Buscaminas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d1a;
+      --card: #161628;
+      --border: #2a2a4a;
+      --accent: #00e5ff;
+      --accent2: #ff4081;
+      --win: #00e676;
+      --lose: #ff5252;
+      --text: #e0e0f0;
+      --muted: #7070a0;
+      --cell: #1e1e38;
+      --cell-hover: #252545;
+      --cell-open: #111122;
+      --cell-border-light: #3a3a5a;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Nunito', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      animation: fadeDown 0.4s ease both;
+    }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    header h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 16px;
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(0,229,255,0.5);
+      letter-spacing: 2px;
+    }
+
+    .player-name {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .player-name span { color: var(--accent); font-weight: 700; }
+
+    /* ── HUD ── */
+    .hud {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 16px;
+      animation: fadeDown 0.4s 0.1s ease both;
+    }
+
+    .hud-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      text-align: center;
+      min-width: 90px;
+    }
+    .hud-label {
+      font-size: 9px;
+      font-family: 'Press Start 2P', monospace;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+    .hud-value {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 18px;
+      margin-top: 4px;
+    }
+    #minas-count { color: var(--accent2); }
+    #timer-val   { color: var(--accent); }
+    #score-val   { color: var(--win); }
+
+    /* ── Board ── */
+    .board-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 0 40px rgba(0,229,255,0.06);
+      animation: fadeUp 0.4s 0.15s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #tablero {
+      display: grid;
+      grid-template-columns: repeat(9, 36px);
+      gap: 3px;
+    }
+
+    .celda {
+      width: 36px; height: 36px;
+      background: var(--cell);
+      border: 1px solid var(--cell-border-light);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s, transform 0.1s, box-shadow 0.12s;
+      position: relative;
+    }
+    .celda:hover:not(.abierta):not(.bandera) {
+      background: var(--cell-hover);
+      transform: scale(1.06);
+      box-shadow: 0 0 8px rgba(0,229,255,0.2);
+    }
+    .celda.abierta {
+      background: var(--cell-open);
+      border-color: #1e1e38;
+      cursor: default;
+      animation: openCell 0.15s ease both;
+    }
+    @keyframes openCell {
+      0% { transform: scale(0.85); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .celda.bandera { background: rgba(255,64,129,0.15); border-color: var(--accent2); }
+    .celda.bandera::after { content: '🚩'; font-size: 16px; }
+
+    .celda.mina-explotada { background: rgba(255,82,82,0.3); border-color: var(--lose); animation: shake 0.3s ease; }
+    .celda.mina-revelada  { background: rgba(255,82,82,0.1); }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* number colors */
+    [data-n="1"] { color: #64b5f6; }
+    [data-n="2"] { color: #81c784; }
+    [data-n="3"] { color: #e57373; }
+    [data-n="4"] { color: #7c4dff; }
+    [data-n="5"] { color: #ff7043; }
+    [data-n="6"] { color: #26c6da; }
+    [data-n="7"] { color: #f48fb1; }
+    [data-n="8"] { color: #bdbdbd; }
+
+    /* ── Overlay ── */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+    }
+    #overlay.visible { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 360px;
+      width: 100%;
+      position: relative;
+    }
+    .result-card::before {
+      content: '';
+      position: absolute; top: -1px; left: 15%; right: 15%; height: 2px;
+    }
+    .result-card.win::before  { background: linear-gradient(90deg, transparent, var(--win), transparent); }
+    .result-card.lose::before { background: linear-gradient(90deg, transparent, var(--lose), transparent); }
+
+    .result-icon { font-size: 64px; margin-bottom: 16px; }
+
+    .result-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .win  .result-title { color: var(--win); }
+    .lose .result-title { color: var(--lose); }
+
+    .result-stats {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+      line-height: 1.8;
+    }
+    .result-stats strong { color: var(--text); }
+
+    .saving-msg {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .saving-msg.ok   { color: var(--win); }
+    .saving-msg.fail { color: var(--lose); }
+
+    .btn-row { display: flex; gap: 12px; justify-content: center; }
+
+    .btn {
+      padding: 14px 20px;
+      border: none; border-radius: 10px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent); color: #000;
+      box-shadow: 0 4px 16px rgba(0,229,255,0.3);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+
+    .legend {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 12px;
+      text-align: center;
+    }
+    .legend span { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💣 BUSCAMINAS</h1>
+  <p class="player-name">Jugador: <span>{{ nombre }}</span></p>
+</header>
+
+<div class="hud">
+  <div class="hud-item">
+    <div class="hud-label">MINAS</div>
+    <div class="hud-value" id="minas-count">10</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">TIEMPO</div>
+    <div class="hud-value" id="timer-val">0</div>
+  </div>
+  <div class="hud-item">
+    <div class="hud-label">PUNTOS</div>
+    <div class="hud-value" id="score-val">0</div>
+  </div>
+</div>
+
+<div class="board-wrap">
+  <div id="tablero"></div>
+  <p class="legend">Clic izquierdo: abrir &nbsp;|&nbsp; Clic derecho: <span>🚩</span> bandera</p>
+</div>
+
+<!-- Overlay resultado -->
+<div id="overlay">
+  <div class="result-card" id="result-card">
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-stats" id="result-stats"></div>
+    <p class="saving-msg" id="saving-msg">Guardando resultado...</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="nuevaPartida()">▶ REINICIAR</button>
+      <button class="btn btn-secondary" onclick="window.location.href='/salir'">SALIR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const FILAS = 9, COLS = 9, TOTAL_MINAS = 10;
+  const NOMBRE = "{{ nombre }}";
+  let tablero = [], juegoTerminado = false, primerClick = true;
+  let minasRestantes = TOTAL_MINAS, celdasDescubiertas = 0;
+  let timerInterval = null, segundos = 0;
+
+  const totalSeguras = FILAS * COLS - TOTAL_MINAS;
+
+  // ── Inicializar tablero ──────────────────────────────────────────────────────
+  function initTablero() {
+    tablero = Array.from({ length: FILAS }, () =>
+      Array.from({ length: COLS }, () => ({
+        mina: false, abierta: false, bandera: false, vecinos: 0
+      }))
+    );
+    juegoTerminado = false; primerClick = true;
+    minasRestantes = TOTAL_MINAS; celdasDescubiertas = 0; segundos = 0;
+    clearInterval(timerInterval);
+    actualizarHUD();
+    renderTablero();
+  }
+
+  function colocarMinas(filaEvitar, colEvitar) {
+    let colocadas = 0;
+    while (colocadas < TOTAL_MINAS) {
+      const f = Math.floor(Math.random() * FILAS);
+      const c = Math.floor(Math.random() * COLS);
+      if (!tablero[f][c].mina && !(f === filaEvitar && c === colEvitar)) {
+        tablero[f][c].mina = true;
+        colocadas++;
+      }
+    }
+    for (let f = 0; f < FILAS; f++)
+      for (let c = 0; c < COLS; c++)
+        if (!tablero[f][c].mina)
+          tablero[f][c].vecinos = contarVecinos(f, c);
+  }
+
+  function contarVecinos(f, c) {
+    let cnt = 0;
+    for (let df = -1; df <= 1; df++)
+      for (let dc = -1; dc <= 1; dc++) {
+        const nf = f + df, nc = c + dc;
+        if (nf >= 0 && nf < FILAS && nc >= 0 && nc < COLS && tablero[nf][nc].mina) cnt++;
+      }
+    return cnt;
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  function renderTablero() {
+    const div = document.getElementById('tablero');
+    div.innerHTML = '';
+    for (let f = 0; f < FILAS; f++)
+      for (let c = 0; c < COLS; c++) {
+        const el = document.createElement('div');
+        el.className = 'celda';
+        el.dataset.f = f; el.dataset.c = c;
+        aplicarEstado(el, tablero[f][c]);
+        el.addEventListener('click', () => onClick(f, c));
+        el.addEventListener('contextmenu', e => { e.preventDefault(); onFlag(f, c); });
+        div.appendChild(el);
+      }
+  }
+
+  function aplicarEstado(el, celda) {
+    el.className = 'celda';
+    el.textContent = '';
+    el.removeAttribute('data-n');
+    if (celda.abierta) {
+      el.classList.add('abierta');
+      if (celda.mina) {
+        el.classList.add('mina-revelada');
+        el.textContent = '💣';
+      } else if (celda.vecinos > 0) {
+        el.textContent = celda.vecinos;
+        el.dataset.n = celda.vecinos;
+      }
+    } else if (celda.bandera) {
+      el.classList.add('bandera');
+    }
+  }
+
+  function getEl(f, c) {
+    return document.querySelector(`.celda[data-f="${f}"][data-c="${c}"]`);
+  }
+
+  // ── Interacción ──────────────────────────────────────────────────────────────
+  function onClick(f, c) {
+    if (juegoTerminado) return;
+    const celda = tablero[f][c];
+    if (celda.abierta || celda.bandera) return;
+
+    if (primerClick) {
+      primerClick = false;
+      colocarMinas(f, c);
+      timerInterval = setInterval(() => {
+        segundos++;
+        document.getElementById('timer-val').textContent = segundos;
+      }, 1000);
+    }
+
+    if (celda.mina) {
+      celda.abierta = true;
+      const el = getEl(f, c);
+      el.classList.add('mina-explotada');
+      el.textContent = '💣';
+      terminarJuego(false);
+      return;
+    }
+
+    abrir(f, c);
+    actualizarHUD();
+    if (celdasDescubiertas === totalSeguras) terminarJuego(true);
+  }
+
+  function abrir(f, c) {
+    if (f < 0 || f >= FILAS || c < 0 || c >= COLS) return;
+    const celda = tablero[f][c];
+    if (celda.abierta || celda.bandera || celda.mina) return;
+    celda.abierta = true;
+    celdasDescubiertas++;
+    aplicarEstado(getEl(f, c), celda);
+    if (celda.vecinos === 0)
+      for (let df = -1; df <= 1; df++)
+        for (let dc = -1; dc <= 1; dc++)
+          if (df !== 0 || dc !== 0) abrir(f + df, c + dc);
+  }
+
+  function onFlag(f, c) {
+    if (juegoTerminado) return;
+    const celda = tablero[f][c];
+    if (celda.abierta) return;
+    celda.bandera = !celda.bandera;
+    minasRestantes += celda.bandera ? -1 : 1;
+    aplicarEstado(getEl(f, c), celda);
+    actualizarHUD();
+  }
+
+  function actualizarHUD() {
+    document.getElementById('minas-count').textContent = minasRestantes;
+    document.getElementById('score-val').textContent = celdasDescubiertas;
+  }
+
+  // ── Fin de juego ─────────────────────────────────────────────────────────────
+  function terminarJuego(ganaste) {
+    juegoTerminado = true;
+    clearInterval(timerInterval);
+
+    // revelar todas las minas si perdió
+    if (!ganaste) {
+      for (let f = 0; f < FILAS; f++)
+        for (let c = 0; c < COLS; c++)
+          if (tablero[f][c].mina && !tablero[f][c].abierta) {
+            tablero[f][c].abierta = true;
+            const el = getEl(f, c);
+            el.classList.add('abierta', 'mina-revelada');
+            el.textContent = '💣';
+          }
+    }
+
+    const card = document.getElementById('result-card');
+    card.className = 'result-card ' + (ganaste ? 'win' : 'lose');
+    document.getElementById('result-icon').textContent = ganaste ? '🏆' : '💥';
+    document.getElementById('result-title').textContent = ganaste ? '¡GANASTE!' : 'GAME OVER';
+    document.getElementById('result-stats').innerHTML =
+      `Jugador: <strong>${NOMBRE}</strong><br>
+       Celdas descubiertas: <strong>${celdasDescubiertas}</strong><br>
+       Tiempo: <strong>${segundos}s</strong>`;
+
+    document.getElementById('overlay').classList.add('visible');
+    guardarResultado(celdasDescubiertas);
+  }
+
+  // ── Guardar en BD ────────────────────────────────────────────────────────────
+  async function guardarResultado(resultado) {
+    const msgEl = document.getElementById('saving-msg');
+    msgEl.className = 'saving-msg';
+    msgEl.textContent = 'Guardando resultado...';
+    try {
+      const res = await fetch('/guardar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resultado })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        msgEl.classList.add('ok');
+        msgEl.textContent = '✔ Resultado guardado correctamente.';
+      } else {
+        msgEl.classList.add('fail');
+        msgEl.textContent = '✘ ' + (data.error || 'No se pudo guardar.');
+      }
+    } catch (e) {
+      msgEl.classList.add('fail');
+      msgEl.textContent = '✘ Error de conexión al guardar.';
+    }
+  }
+
+  function nuevaPartida() {
+    document.getElementById('overlay').classList.remove('visible');
+    initTablero();
+  }
+
+  // Iniciar
+  initTablero();
+</script>
+</body>
+</html>
