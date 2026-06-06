@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Error — Buscaminas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #0d0d1a; --card: #161628; --border: #2a2a4a; --lose: #ff5252; --text: #e0e0f0; --muted: #7070a0; --accent: #00e5ff; }
+    body {
+      background: var(--bg); font-family: 'Nunito', sans-serif; color: var(--text);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .card {
+      background: var(--card); border: 1px solid rgba(255,82,82,0.3);
+      border-radius: 16px; padding: 48px 40px; max-width: 400px;
+      text-align: center; box-shadow: 0 0 40px rgba(255,82,82,0.08);
+    }
+    .card::before {
+      content: ''; display: block; height: 2px; margin: -48px -40px 40px;
+      border-radius: 16px 16px 0 0;
+      background: linear-gradient(90deg, transparent, var(--lose), transparent);
+    }
+    .icon { font-size: 56px; margin-bottom: 16px; }
+    h1 { font-family: 'Press Start 2P', monospace; font-size: 13px; color: var(--lose); margin-bottom: 16px; line-height: 1.6; }
+    p { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 28px; }
+    .btn {
+      padding: 14px 28px; background: var(--accent); color: #000;
+      font-family: 'Press Start 2P', monospace; font-size: 10px;
+      border: none; border-radius: 10px; cursor: pointer;
+      text-decoration: none; display: inline-block;
+      box-shadow: 0 4px 16px rgba(0,229,255,0.3); transition: transform 0.1s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⚠️</div>
+    <h1>{{ titulo }}</h1>
+    <p>{{ mensaje }}</p>
+    <a href="/" class="btn">VOLVER AL INICIO</a>
+  </div>
+</body>
+</html>
