@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ranking — Buscaminas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d1a; --card: #161628; --border: #2a2a4a;
+      --accent: #00e5ff; --accent2: #ff4081; --win: #00e676;
+      --text: #e0e0f0; --muted: #7070a0;
+    }
+    body {
+      background: var(--bg); font-family: 'Nunito', sans-serif;
+      color: var(--text); min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 32px 16px;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+    h1 {
+      font-family: 'Press Start 2P', monospace; font-size: 14px;
+      color: var(--accent); text-shadow: 0 0 20px rgba(0,229,255,0.5);
+      margin-bottom: 6px; letter-spacing: 2px;
+    }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+    .table-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 0 40px rgba(0,229,255,0.06);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: rgba(0,229,255,0.07); }
+    th {
+      font-family: 'Press Start 2P', monospace; font-size: 9px;
+      color: var(--muted); letter-spacing: 1px;
+      padding: 14px 20px; text-align: left;
+    }
+    td { padding: 14px 20px; font-size: 14px; border-top: 1px solid var(--border); }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .pos { font-family: 'Press Start 2P', monospace; font-size: 11px; }
+    .pos-1 { color: #ffd700; }
+    .pos-2 { color: #c0c0c0; }
+    .pos-3 { color: #cd7f32; }
+    .pos-other { color: var(--muted); }
+
+    .score { font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--win); }
+
+    .empty { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
+
+    .btn {
+      margin-top: 24px; padding: 14px 28px;
+      background: var(--accent); color: #000;
+      font-family: 'Press Start 2P', monospace; font-size: 10px;
+      border: none; border-radius: 10px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,229,255,0.3);
+      transition: transform 0.1s;
+      text-decoration: none; display: inline-block;
+    }
+    .btn:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <h1>🏆 RANKING</h1>
+  <p class="sub">Top 20 mejores jugadores</p>
+
+  <div class="table-wrap">
+    {% if jugadores %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>JUGADOR</th>
+          <th>CELDAS</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jugadores %}
+        <tr>
+          <td>
+            {% if loop.index == 1 %}
+              <span class="pos pos-1">🥇 1</span>
+            {% elif loop.index == 2 %}
+              <span class="pos pos-2">🥈 2</span>
+            {% elif loop.index == 3 %}
+              <span class="pos pos-3">🥉 3</span>
+            {% else %}
+              <span class="pos pos-other">{{ loop.index }}</span>
+            {% endif %}
+          </td>
+          <td>{{ j.nombre }}</td>
+          <td><span class="score">{{ j.resultado }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty">Aún no hay partidas registradas. ¡Sé el primero!</p>
+    {% endif %}
+  </div>
+
+  <a href="/" class="btn">▶ JUGAR</a>
+</body>
+</html>
